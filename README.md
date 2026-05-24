@@ -89,3 +89,4 @@ The Worker exposes:
 ## Curated Templates
 
 The Worker only chooses from the curated whitelist in [worker/src/memeTemplates.ts](worker/src/memeTemplates.ts), including Drake, Change My Mind, Two Buttons, Trade Offer, Distracted Boyfriend, Gru Presentation, This Is Fine, Expanding Brain, Surprised Pikachu, Domino Effect, Galaxy Brain, Virgin vs Chad, Spider-Man Pointing, NPC Meme, Family Guy Color Chart, and Bro Visited Friend.
+\nCI trigger: commit to activate Pages deploy workflow.
