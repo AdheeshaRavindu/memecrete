@@ -34,6 +34,7 @@ Set these on the Worker:
 
 ```bash
 wrangler secret put OPENROUTER_API_KEY
+wrangler secret put OPENROUTER_API_KEY_FALLBACKS
 wrangler secret put GEMINI_API_KEY
 wrangler secret put IMGFLIP_USERNAME
 wrangler secret put IMGFLIP_PASSWORD
@@ -42,6 +43,8 @@ wrangler secret put IMGFLIP_PASSWORD
 Optional Worker vars:
 
 - `OPENROUTER_MODEL` defaults to `meta-llama/llama-3.2-3b-instruct:free`.
+- `OPENROUTER_API_KEY_FALLBACKS` is a comma-separated list of extra OpenRouter keys. The Worker tries the primary `OPENROUTER_API_KEY` first, then each fallback key when a key hits rate limits or auth errors.
+- `OPENROUTER_API_KEYS` can replace both vars with one comma-separated list if you prefer.
 - `GEMINI_API_KEY` is optional and used as a second free LLM fallback.
 - `GEMINI_MODEL` defaults to `gemini-2.5-flash`.
 - `APP_URL` is sent to OpenRouter as the referer.

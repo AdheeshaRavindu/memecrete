@@ -6,17 +6,21 @@ export interface RecentSpin {
   xPost: string;
   jokeFingerprint: string;
   createdAt: string;
+  cryptoContext?: string;
+  concreteContext?: string;
+  emotion?: string;
 }
 
 const memoryRecent: RecentSpin[] = [];
+const RECENT_LIMIT = 64;
 
 export function readMemoryRecent() {
-  return memoryRecent.slice(0, 32);
+  return memoryRecent.slice(0, RECENT_LIMIT);
 }
 
 export function rememberInMemory(spin: RecentSpin) {
   memoryRecent.unshift(spin);
-  memoryRecent.splice(32);
+  memoryRecent.splice(RECENT_LIMIT);
 }
 
 export async function readRecentSpins(env: Env) {
@@ -31,10 +35,10 @@ export async function readRecentSpins(env: Env) {
       `SELECT template_name as template, caption, x_post as xPost, joke_fingerprint as jokeFingerprint, created_at as createdAt
        FROM meme_generations
        ORDER BY created_at DESC
-       LIMIT 32`,
+       LIMIT 64`,
     ).all<RecentSpin>();
 
-    return [...(query.results ?? []), ...memory].slice(0, 32);
+    return [...(query.results ?? []), ...memory].slice(0, RECENT_LIMIT);
   } catch {
     return memory;
   }

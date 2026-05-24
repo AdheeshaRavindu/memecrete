@@ -6,11 +6,22 @@ import { useSpinStore } from '@/store/useSpinStore';
 export function SpincreteApp() {
   const { latest, loading, error, spin } = useSpinStore();
   const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
 
   const fileName = useMemo(() => {
     const slug = latest?.template.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'meme';
     return `spincrete-${slug}.jpg`;
   }, [latest?.template]);
+
+  async function handleDownload() {
+    if (!latest) {
+      return;
+    }
+
+    await downloadImage(latest.memeUrl, fileName);
+    setDownloaded(true);
+    window.setTimeout(() => setDownloaded(false), 1500);
+  }
 
   async function handleCopyCaption() {
     if (!latest?.caption) {
@@ -71,7 +82,21 @@ export function SpincreteApp() {
             animate={{ opacity: loading && !latest ? 0.82 : 1 }}
           >
             {latest ? (
-              <img src={latest.memeUrl} alt={latest.caption} className="mx-auto max-h-[62vh] w-full bg-black object-contain" />
+              <div className="flex flex-col">
+                <img src={latest.memeUrl} alt={latest.caption} className="mx-auto max-h-[62vh] w-full bg-black object-contain" />
+                <div className="flex flex-col gap-2 border-t border-white/10 bg-[#0d1110] p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
+                    Saves as <span className="text-white/75">{fileName}</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void handleDownload()}
+                    className="w-full border border-[#86efac] bg-[#86efac] px-4 py-3 text-sm font-black uppercase tracking-normal text-[#07100b] transition hover:bg-[#bbf7d0] sm:w-auto"
+                  >
+                    {downloaded ? 'Downloaded' : 'Download Meme'}
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="flex aspect-[4/3] min-h-[260px] items-center justify-center bg-[linear-gradient(135deg,#0b0f0e_0%,#101713_55%,#11100b_100%)] p-6 text-center">
                 <p className="max-w-xs text-sm font-medium leading-relaxed text-white/55">
@@ -112,11 +137,11 @@ export function SpincreteApp() {
               </button>
               <button
                 type="button"
-                onClick={() => latest && void downloadImage(latest.memeUrl, fileName)}
+                onClick={() => void handleDownload()}
                 disabled={!latest}
                 className="border border-white/10 bg-white/[0.06] px-3 py-3 text-xs font-bold uppercase tracking-normal text-white transition hover:bg-white/[0.1] disabled:opacity-50"
               >
-                Download
+                {downloaded ? 'Saved' : 'Download'}
               </button>
               <button
                 type="button"

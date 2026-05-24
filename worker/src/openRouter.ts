@@ -1,15 +1,10 @@
 import type { Env } from './env';
 import type { MemeTemplate } from './memeTemplates';
 import type { RecentSpin } from './history';
-
-export interface GeneratedMemeText {
-  text0: string;
-  text1: string;
-  text2: string;
-  text3: string;
-  caption: string;
-  xPost: string;
-}
+import type { SpinContextBundle } from './spinVariety';
+import { buildVarietyPromptBlock, composeFallbackMeme, isTooSimilar } from './spinVariety';
+import type { GeneratedMemeText } from './memeText';
+export type { GeneratedMemeText } from './memeText';
 
 interface OpenRouterResponse {
   choices?: Array<{
@@ -78,19 +73,100 @@ ironic
 degen
 market trauma humor`;
 
+export function getOpenRouterKeys(env: Env) {
+  const keys: string[] = [];
+
+  if (env.OPENROUTER_API_KEY?.trim()) {
+    keys.push(env.OPENROUTER_API_KEY.trim());
+  }
+
+  for (const source of [env.OPENROUTER_API_KEYS, env.OPENROUTER_API_KEY_FALLBACKS]) {
+    if (!source) {
+      continue;
+    }
+
+    keys.push(
+      ...source
+        .split(/[\n,]+/)
+        .map((key) => key.trim())
+        .filter(Boolean),
+    );
+  }
+
+  return [...new Set(keys)];
+}
+
+function shouldTryNextOpenRouterKey(status: number) {
+  return status === 401 || status === 402 || status === 403 || status === 429;
+}
+
+async function tryOpenRouter(
+  env: Env,
+  apiKey: string,
+  userPrompt: string,
+  recent: RecentSpin[],
+) {
+  const requestedModel = env.OPENROUTER_MODEL ?? 'meta-llama/llama-3.2-3b-instruct:free';
+  const models = Array.from(new Set([requestedModel, ...FREE_MODEL_FALLBACKS]));
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const model = models[attempt] ?? requestedModel;
+    const body: Record<string, unknown> = {
+      model,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: [0.92, 1.05, 1.18][attempt] ?? 1.18,
+      max_tokens: 520,
+    };
+
+    if (!model.endsWith(':free') && model !== 'openrouter/free') {
+      body.response_format = { type: 'json_object' };
+    }
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        'content-type': 'application/json',
+        'http-referer': env.APP_URL ?? 'https://spincrete.pages.dev',
+        'x-title': env.APP_NAME ?? 'Spincrete',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      if (shouldTryNextOpenRouterKey(response.status)) {
+        return { kind: 'retry-key' as const };
+      }
+
+      throw new Error(`OpenRouter request failed: ${response.status}`);
+    }
+
+    const data = (await response.json()) as OpenRouterResponse;
+    const content = data.choices?.[0]?.message?.content;
+    const parsed = parseGeneratedText(content);
+
+    if (parsed && isSharpEnough(parsed, recent) && !isTooSimilar(parsed, recent)) {
+      return { kind: 'success' as const, text: parsed };
+    }
+  }
+
+  return { kind: 'continue' as const };
+}
+
 export async function generateMemeText(
   env: Env,
   input: {
     template: MemeTemplate;
-    cryptoContext: string;
-    concreteContext: string;
-    emotion: string;
+    bundle: SpinContextBundle;
     recent: RecentSpin[];
   },
 ) {
   const recentHints = input.recent
-    .slice(0, 8)
-    .map((item) => `- ${item.template}: ${item.caption}`)
+    .slice(0, 12)
+    .map((item) => `- ${item.template}: ${item.caption} / ${item.xPost}`)
     .join('\n');
 
   const userPrompt = `Generate a meme.
@@ -102,13 +178,15 @@ Style:
 ${input.template.promptStyle}
 
 Crypto Context:
-${input.cryptoContext}
+${input.bundle.cryptoContext}
 
 Concrete Context:
-${input.concreteContext}
+${input.bundle.concreteContext}
 
 Emotion:
-${input.emotion}
+${input.bundle.emotion}
+
+${buildVarietyPromptBlock(input.bundle)}
 
 Concrete Framing:
 Concrete must be positive. The joke can be dark, absurd, or self-roasting, but Concrete should feel competent, calm, useful, and CT-native.
@@ -127,60 +205,27 @@ Return strict JSON only:
   "xPost": ""
 }`;
 
-  if (!env.OPENROUTER_API_KEY) {
+  const openRouterKeys = getOpenRouterKeys(env);
+
+  if (!openRouterKeys.length) {
     const geminiText = await tryGemini(env, userPrompt, input.recent);
-    return geminiText ?? fallbackMemeText(input.template);
+    return geminiText ?? composeFallbackMeme(input.template, input.bundle);
   }
 
-  const requestedModel = env.OPENROUTER_MODEL ?? 'meta-llama/llama-3.2-3b-instruct:free';
-  const models = Array.from(new Set([requestedModel, ...FREE_MODEL_FALLBACKS]));
+  for (const apiKey of openRouterKeys) {
+    const result = await tryOpenRouter(env, apiKey, userPrompt, input.recent);
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const model = models[attempt] ?? requestedModel;
-    const body: Record<string, unknown> = {
-      model,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: attempt === 0 ? 0.92 : 1.05,
-      max_tokens: 520,
-    };
-
-    if (!model.endsWith(':free') && model !== 'openrouter/free') {
-      body.response_format = { type: 'json_object' };
+    if (result.kind === 'success') {
+      return result.text;
     }
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-        'content-type': 'application/json',
-        'http-referer': env.APP_URL ?? 'https://spincrete.pages.dev',
-        'x-title': env.APP_NAME ?? 'Spincrete',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      if (response.status === 402 || response.status === 429) {
-        continue;
-      }
-
-      throw new Error(`OpenRouter request failed: ${response.status}`);
-    }
-
-    const data = (await response.json()) as OpenRouterResponse;
-    const content = data.choices?.[0]?.message?.content;
-    const parsed = parseGeneratedText(content);
-
-    if (parsed && isSharpEnough(parsed, input.recent)) {
-      return parsed;
+    if (result.kind === 'retry-key') {
+      continue;
     }
   }
 
   const geminiText = await tryGemini(env, userPrompt, input.recent);
-  return geminiText ?? fallbackMemeText(input.template);
+  return geminiText ?? composeFallbackMeme(input.template, input.bundle);
 }
 
 async function tryGemini(env: Env, userPrompt: string, recent: RecentSpin[]) {
@@ -220,7 +265,7 @@ async function tryGemini(env: Env, userPrompt: string, recent: RecentSpin[]) {
   const content = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('\n');
   const parsed = parseGeneratedText(content);
 
-  return parsed && isSharpEnough(parsed, recent) ? parsed : null;
+  return parsed && isSharpEnough(parsed, recent) && !isTooSimilar(parsed, recent) ? parsed : null;
 }
 
 function parseGeneratedText(content?: string): GeneratedMemeText | null {
@@ -281,148 +326,4 @@ function similarity(left: string, right: string) {
   const rightWords = new Set(right.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));
   const overlap = [...leftWords].filter((word) => rightWords.has(word)).length;
   return overlap / Math.max(leftWords.size, rightWords.size, 1);
-}
-
-function fallbackMemeText(template: MemeTemplate): GeneratedMemeText {
-  const byStyle: Partial<Record<string, GeneratedMemeText>> = {
-    reject_vs_accept: {
-      text0: 'calling every red candle "macro"',
-      text1: 'letting Concrete handle risk like an adult',
-      text2: '',
-      text3: '',
-      caption: 'Concrete stays calm while CT turns a 5m wick into a personality.',
-      xPost: 'portfolio loud, Concrete calm, timeline somehow still asking for a thesis',
-    },
-    controversial_opinion: {
-      text0: 'most "diamond hands" is just no exit plan with merch',
-      text1: 'Concrete makes calm look offensive',
-      text2: '',
-      text3: '',
-      caption: 'Concrete is not loud. That is why the timeline keeps underestimating it.',
-      xPost: 'diamond hands discourse gets quieter when Concrete handles the risk part',
-    },
-    decision_conflict: {
-      text0: 'touch grass',
-      text1: 'open Concrete and call it research',
-      text2: '',
-      text3: '',
-      caption: 'Two buttons. Concrete is the only one with a plan.',
-      xPost: 'every degen morning has two buttons and Concrete is the sane one',
-    },
-    trade_offer: {
-      text0: 'i receive: Concrete doing the serious part',
-      text1: 'you receive: fewer panic refreshes',
-      text2: '',
-      text3: '',
-      caption: 'A rare trade offer where the timeline becomes less embarrassing.',
-      xPost: 'trade offer: Concrete gets used, i stop calling panic "strategy"',
-    },
-    temptation: {
-      text0: 'me',
-      text1: 'fresh leverage with no thesis',
-      text2: 'Concrete doing the boring thing correctly',
-      text3: '',
-      caption: 'Concrete being responsible while CT falls in love with a candle again.',
-      xPost: 'Concrete sitting there with risk controls while CT gets seduced by a green 5m candle',
-    },
-    four_panel_story: {
-      text0: 'deposit into Concrete',
-      text1: 'stay calm during the wick',
-      text2: 'CT calls it cope',
-      text3: 'CT asks for the link after liquidation',
-      caption: 'Concrete did the quiet thing, then suddenly everyone wanted quiet.',
-      xPost: 'Concrete users explaining patience to people whose stop loss is astrology',
-    },
-    false_equivalence: {
-      text0: 'Concrete risk management',
-      text1: 'posting "we are so back" at resistance',
-      text2: '',
-      text3: '',
-      caption: 'Corporate found the entire timeline guilty. Concrete was excused.',
-      xPost: 'Concrete: risk management. CT: the same thing but with more screaming',
-    },
-    market_disaster_coping: {
-      text0: 'portfolio down 38%',
-      text1: 'Concrete tab still open. face neutral.',
-      text2: '',
-      text3: '',
-      caption: 'This is fine, because Concrete is the part that remembered controls.',
-      xPost: 'market nuking, Concrete calmly blinking, Moai emotionally unavailable',
-    },
-    brain_expansion: {
-      text0: 'buy the top',
-      text1: 'call it conviction',
-      text2: 'use Concrete and admit risk exists',
-      text3: 'Concrete calm, Moai silent',
-      caption: 'Enlightenment is just fewer notifications and better defaults.',
-      xPost: 'final brain stage: Concrete, silence, no victory thread',
-    },
-    reaction: {
-      text0: 'CT discovers leverage has consequences',
-      text1: 'Concrete users: first time?',
-      text2: '',
-      text3: '',
-      caption: 'The surprise was priced in. Concrete already read the lesson.',
-      xPost: 'CT seeing risk management work and reacting like it violated lore',
-    },
-    cause_and_effect: {
-      text0: 'one guy says "surely no cascade"',
-      text1: 'Concrete risk docs get read by candlelight',
-      text2: '',
-      text3: '',
-      caption: 'Small sentence, large liquidation archaeology. Concrete brought a flashlight.',
-      xPost: 'domino one: "probably fine" domino last: Concrete becomes bedtime reading',
-    },
-    status_comparison: {
-      text0: 'virgin: chasing every farm with 11 tabs',
-      text1: 'chad: Concrete, boring yield, no heroic arc',
-      text2: '',
-      text3: '',
-      caption: 'One is content. Concrete is allocation.',
-      xPost: 'virgin farm rotation vs chad Concrete user who remembers sleep',
-    },
-    mutual_accusation: {
-      text0: 'CT',
-      text1: 'my wallet',
-      text2: 'Concrete risk page',
-      text3: '',
-      caption: 'Everyone is pointing. Concrete is the only one not sweating.',
-      xPost: 'CT, my wallet, and Concrete risk docs all identifying the problem at once',
-    },
-    npc_dialogue: {
-      text0: 'number go up soon?',
-      text1: 'Concrete: please define "risk"',
-      text2: '',
-      text3: '',
-      caption: 'Dialogue tree ended early because Concrete asked the useful question.',
-      xPost: 'npc asks for yield, Concrete asks one follow-up, npc factory resets',
-    },
-    absurd_chart: {
-      text0: 'green candle: genius',
-      text1: 'red candle: macro',
-      text2: 'sideways: spiritual test',
-      text3: 'Concrete: adults in room',
-      caption: 'The chart was emotional support with axes. Concrete was the adult color.',
-      xPost: 'family guy color chart but every color is just CT inventing a reason not to manage risk',
-    },
-    friend_visit: {
-      text0: 'bro visited a Concrete user',
-      text1: 'came back asking what collateral means',
-      text2: '',
-      text3: '',
-      caption: 'One visit and suddenly the timeline had standards.',
-      xPost: 'bro visited a Concrete user and returned with fewer tabs and more standards',
-    },
-  };
-
-  return (
-    byStyle[template.promptStyle] ?? {
-      text0: 'CT discovers risk',
-      text1: 'Concrete was already staring at it',
-      text2: 'the Moai says nothing',
-      text3: 'somehow this is bullish',
-      caption: 'Ancient stone face, modern portfolio damage.',
-      xPost: 'Concrete quietly doing the work while CT negotiates with a red candle',
-    }
-  );
 }
