@@ -1,0 +1,7 @@
+OPENROUTER_API_KEY=sk-or-v1-your-primary-key
+OPENROUTER_API_KEY_FALLBACKS=sk-or-v1-backup-key-1,sk-or-v1-backup-key-2
+IMGFLIP_USERNAME=your_imgflip_username
+IMGFLIP_PASSWORD=your_imgflip_password
+OPENROUTER_MODEL=meta-llama/llama-3.2-3b-instruct:free
+GEMINI_API_KEY=optional_gemini_key
+GEMINI_MODEL=gemini-2.5-flash

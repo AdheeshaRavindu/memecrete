@@ -9,7 +9,7 @@ not_found_handling = "single-page-application"
 
 [vars]
 APP_NAME = "Spincrete"
-APP_URL = "https://memecrete.pages.dev"
+APP_URL = "https://spincrete.pages.dev"
 OPENROUTER_MODEL = "meta-llama/llama-3.2-3b-instruct:free"
 GEMINI_MODEL = "gemini-2.5-flash"
 

@@ -1,95 +1,158 @@
-# Spincrete
+# Spincrete 🗿
 
-One-click Concrete meme generator for CT-native, Imgflip-rendered memes.
+**One click. One meme. Concrete wins the punchline.**
 
-## Architecture
+[![Live Demo](https://img.shields.io/badge/Live-spincrete.pages.dev-86efac?style=for-the-badge&logo=cloudflare&logoColor=black)](https://spincrete.pages.dev)
+[![Stack](https://img.shields.io/badge/Stack-React%20%2B%20Cloudflare%20Workers-111?style=for-the-badge)](https://developers.cloudflare.com/workers/)
+[![Vibes](https://img.shields.io/badge/Vibes-CT--native%20%7C%20Moai%20mode-0b0f0e?style=for-the-badge)](https://spincrete.pages.dev)
 
-- React + TypeScript frontend built with Vite.
-- Dark-only, mobile-first crypto UI.
-- Cloudflare Worker API at `POST /api/spin`.
-- Imgflip API for curated meme templates and final image rendering.
-- OpenRouter API for template-specific meme text.
-- D1-backed recent history when configured, with in-memory repeat protection as a fallback.
+Spincrete is a Concrete-native meme spinner for CT: absurd, Imgflip-rendered, anti-corporate-slop, and always on Concrete's side of the joke.
 
-## Spin Flow
+**→ [spincrete.pages.dev](https://spincrete.pages.dev)**
 
-1. User clicks `SPIN MEME`.
-2. The Worker selects a random template from the curated Imgflip whitelist.
-3. OpenRouter generates short, template-specific CT meme text using crypto, Concrete, and Moai context.
-4. Imgflip renders the meme with the correct textbox count.
-5. The frontend receives:
+---
 
-```json
-{
-  "memeUrl": "",
-  "caption": "",
-  "xPost": "",
-  "template": ""
-}
-```
+## Demo
 
-## Required Secrets
+> *Small tweet. Large domino. Concrete users reading docs while CT asks wen miracle.*
 
-Set these on the Worker:
+[![Spincrete demo — Domino Effect meme with Concrete vs CT caption](docs/spincrete-demo.png)](https://spincrete.pages.dev)
 
-```bash
-wrangler secret put OPENROUTER_API_KEY
-wrangler secret put OPENROUTER_API_KEY_FALLBACKS
-wrangler secret put GEMINI_API_KEY
-wrangler secret put IMGFLIP_USERNAME
-wrangler secret put IMGFLIP_PASSWORD
-```
+Hit **SPIN MEME** and the engine picks a template, writes CT-native copy, renders through Imgflip, and hands you a download-ready meme with caption + X post.
 
-Optional Worker vars:
+---
 
-- `OPENROUTER_MODEL` defaults to `meta-llama/llama-3.2-3b-instruct:free`.
-- `OPENROUTER_API_KEY_FALLBACKS` is a comma-separated list of extra OpenRouter keys. The Worker tries the primary `OPENROUTER_API_KEY` first, then each fallback key when a key hits rate limits or auth errors.
-- `OPENROUTER_API_KEYS` can replace both vars with one comma-separated list if you prefer.
-- `GEMINI_API_KEY` is optional and used as a second free LLM fallback.
-- `GEMINI_MODEL` defaults to `gemini-2.5-flash`.
-- `APP_URL` is sent to OpenRouter as the referer.
-- `APP_NAME` is sent to OpenRouter as the app title.
+## Why it exists
 
-Frontend env:
+CT moves fast. Most meme generators move like a compliance deck with a font choice.
 
-- `VITE_API_BASE_URL` points the frontend to the deployed Worker URL. Leave empty when serving through the same origin.
+Spincrete does the opposite:
 
-## Local Setup
+- **Concrete stays the hero** — risk-aware, calm, useful
+- **CT gets roasted** — leverage trauma, macro cope, diamond-hand merch
+- **Moai energy optional** — ancient stone face, modern portfolio damage
+- **No repeats** — weighted templates, fresh context pools, duplicate blocking
+
+---
+
+## Features
+
+| | |
+| --- | --- |
+| 🎰 **26 meme templates** | Drake, Domino Effect, Distracted Boyfriend, Expanding Brain, and more |
+| 🧠 **LLM-powered copy** | OpenRouter with multi-key fallback + optional Gemini |
+| 🖼️ **Real Imgflip renders** | Not canvas cosplay — actual meme templates |
+| 🔁 **Anti-repeat engine** | 64-spin memory, fingerprint checks, up to 4 retries |
+| ⬇️ **Download button** | Right under the meme, filename included |
+| 📋 **X-ready post** | Caption + post text for one-click sharing |
+
+---
+
+## Quick start
 
 ```bash
 npm install
-npm run dev
+npm run dev          # frontend on localhost
+npm run build
+npm run dev:worker   # full stack with Imgflip + OpenRouter
 ```
 
-Run the Worker separately when testing the real generation endpoint:
+Copy `.dev.vars.example` → `.dev.vars` and add your keys.
 
-```bash
-npm run dev:worker
-```
-
-## D1 Setup
-
-D1 is optional but recommended for anti-repeat history across Worker instances.
-
-```bash
-wrangler d1 execute spincrete-db --file=worker/d1/schema.sql --local
-```
-
-Update `wrangler.toml` with your real D1 database ID before deploying.
-
-## Deployment
+**Deploy live:**
 
 ```bash
 npm run deploy:worker
-npm run deploy:pages
 ```
 
-The Worker exposes:
+---
 
-- `GET /api/health`
-- `POST /api/spin`
+## Spin flow
 
-## Curated Templates
+```
+You click SPIN MEME
+    ↓
+Template picked (recent ones deprioritized)
+    ↓
+Fresh crypto / Concrete / emotion / hook context
+    ↓
+OpenRouter writes template-specific JSON
+    ↓
+Imgflip renders the image
+    ↓
+You get memeUrl + caption + xPost + download
+```
 
-The Worker only chooses from the curated whitelist in [worker/src/memeTemplates.ts](worker/src/memeTemplates.ts), including Drake, Change My Mind, Two Buttons, Trade Offer, Distracted Boyfriend, Gru Presentation, This Is Fine, Expanding Brain, Surprised Pikachu, Domino Effect, Galaxy Brain, Virgin vs Chad, Spider-Man Pointing, NPC Meme, Family Guy Color Chart, and Bro Visited Friend.
-\nCI trigger: commit to activate Pages deploy workflow.
+Example response:
+
+```json
+{
+  "memeUrl": "https://i.imgflip.com/....jpg",
+  "caption": "Small tweet. Large domino. Concrete brought the flashlight.",
+  "xPost": "CT discovers leverage has consequences. Concrete users: first time? 🗿",
+  "template": "Domino Effect"
+}
+```
+
+---
+
+## Architecture
+
+| Layer | Tech |
+| --- | --- |
+| Frontend | React · TypeScript · Vite · Tailwind |
+| Hosting | Cloudflare Worker + static assets |
+| Meme render | Imgflip API |
+| Text gen | OpenRouter (multi-key fallback) |
+| Backup LLM | Gemini (optional) |
+| History | In-memory cache · optional D1 |
+
+**Live:** [spincrete.pages.dev](https://spincrete.pages.dev)  
+**API:** `POST /api/spin` · `GET /api/health`
+
+---
+
+## Secrets
+
+```bash
+npx wrangler secret put OPENROUTER_API_KEY --config wrangler.worker.toml
+npx wrangler secret put OPENROUTER_API_KEY_FALLBACKS --config wrangler.worker.toml
+npx wrangler secret put IMGFLIP_USERNAME --config wrangler.worker.toml
+npx wrangler secret put IMGFLIP_PASSWORD --config wrangler.worker.toml
+```
+
+Or bulk upload:
+
+```bash
+npx wrangler secret bulk .dev.vars --config wrangler.worker.toml
+```
+
+See [.dev.vars.example](.dev.vars.example) for the full template.
+
+---
+
+## Docs
+
+- [PAGES_SETUP.md](PAGES_SETUP.md) — Cloudflare Pages + Worker deployment notes
+- [worker/src/memeTemplates.ts](worker/src/memeTemplates.ts) — curated template whitelist
+- [worker/src/spinVariety.ts](worker/src/spinVariety.ts) — uniqueness + anti-repeat logic
+
+---
+
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server |
+| `npm run dev:worker` | Local Worker + API |
+| `npm run build` | Production build |
+| `npm run deploy:worker` | Build + deploy (recommended) |
+| `npm run deploy:pages` | Deploy to Cloudflare Pages |
+| `npm run check` | TypeScript checks |
+
+---
+
+<p align="center">
+  <strong>Positive Concrete. CT-native. No corporate slop.</strong><br />
+  <a href="https://spincrete.pages.dev">spincrete.pages.dev</a> · 🗿 Moai mode always on
+</p>

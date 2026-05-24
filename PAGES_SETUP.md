@@ -1,58 +1,75 @@
-Cloudflare Pages — repository setup and recommended file structure
+# Cloudflare deployment
 
-This repo is already structured for Cloudflare Pages. Use the instructions below when you "Connect to Git" in the Cloudflare Pages UI.
+**Live app:** [spincrete.pages.dev](https://spincrete.pages.dev)
 
-Recommended Cloudflare Pages settings when connecting this GitHub repo:
-- Branch: `main`
-- Build command: `npm run build`
-- Build output directory: `dist`
-- Install command: leave blank (Cloudflare will run `npm ci` if you set up a package.json script), or set `npm ci` if you prefer explicit install.
+Spincrete runs on Cloudflare Workers (`spincrete-api`) with the React frontend bundled as static assets. Pages can mirror or redirect to the same app.
 
-Files and layout (what this repo contains / what Cloudflare needs):
-- `package.json` — includes `build` script which runs `vite build` and produces `dist/`.
-- `vite.config.ts` — Vite config for building the client.
-- `src/` — React + TS source files.
-- `dist/` — production build output (auto-created by `npm run build`). Cloudflare Pages will use whatever is in `dist` as static assets.
-- `wrangler.toml` / `wrangler.worker.toml` — Cloudflare Worker config (only needed if you deploy Workers separately).
-- `.github/workflows/deploy-pages.yml` — optional GitHub Actions workflow (we added this as a fallback CI deploy via `wrangler`).
-- `dist.zip` — a zip of the `dist` folder for manual upload via the Pages UI if required.
+## Primary deploy (recommended)
 
-Notes / Hints
-- If you connect via the Cloudflare UI, you do not need the `CF_API_TOKEN` secret; Cloudflare builds and deploys using the connected Git provider permissions.
-- If you prefer CI deploy with `wrangler` (the workflow we added), create a GitHub Actions secret named `CF_API_TOKEN` with a token that has Pages write permissions.
-- If you want a manual upload instead of connecting the repo, use `dist.zip` via the Cloudflare Pages upload dialog.
-
-Quick checklist (when connecting in the Pages UI):
-1. Select the repository: `AdheeshaRavindu/memecrete`.
-2. Branch: `main`.
-3. Set build command: `npm run build`.
-4. Set output directory: `dist`.
-5. Start the deployment.
-
-## Required Pages secrets
-
-The `functions/api/spin.ts` endpoint needs the same secrets as local `.dev.vars`. Without them, production spins fail with a 500 until the frontend falls back to local canvas rendering.
-
-Set these on the **production** environment for project `memecrete`:
-
-- `OPENROUTER_API_KEY`
-- `IMGFLIP_USERNAME`
-- `IMGFLIP_PASSWORD`
-
-Optional:
-
-- `GEMINI_API_KEY`
-- `OPENROUTER_MODEL`
-- `GEMINI_MODEL`
-
-From a machine that already has `.dev.vars`:
+Builds the UI and deploys Worker + API together:
 
 ```bash
-npx wrangler pages secret bulk .dev.vars --project-name memecrete
+npm run deploy:worker
 ```
 
-Or add them in the Cloudflare dashboard under **Workers & Pages → memecrete → Settings → Environment variables**.
+Live URL: [spincrete.pages.dev](https://spincrete.pages.dev)
 
-Production URL: https://memecrete.pages.dev
+## Pages projects
 
-If you want, I can also create a small `pages/` folder or an `index.html` in the repo root for a zero-build Pages deploy — tell me which approach you want and I will add it.
+| Project | URL | Role |
+| --- | --- | --- |
+| `spincrete` | [spincrete.pages.dev](https://spincrete.pages.dev) | Main public URL |
+| `memecrete` | [memecrete.pages.dev](https://memecrete.pages.dev) | Alternate / redirect |
+
+Deploy Pages static build:
+
+```bash
+npm run deploy:pages
+```
+
+Deploy redirect stub only:
+
+```bash
+npx wrangler pages deploy pages-redirect --project-name spincrete --commit-dirty=true
+```
+
+## GitHub Actions
+
+[.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) deploys to Pages on push to `main` when `CF_API_TOKEN` is set.
+
+## Secrets
+
+Worker (recommended):
+
+```bash
+npx wrangler secret bulk .dev.vars --config wrangler.worker.toml
+```
+
+Pages (if using `functions/api/spin.ts`):
+
+```bash
+npx wrangler pages secret bulk .dev.vars --project-name spincrete
+```
+
+Required keys: `OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_FALLBACKS`, `IMGFLIP_USERNAME`, `IMGFLIP_PASSWORD`
+
+Optional: `GEMINI_API_KEY`, `OPENROUTER_MODEL`, `GEMINI_MODEL`
+
+## Local dev
+
+```bash
+npm run build
+npm run dev:worker
+```
+
+Copy [.dev.vars.example](.dev.vars.example) → `.dev.vars`
+
+## Troubleshooting
+
+**Blank page on Pages** — asset upload may be incomplete. Run `npm run deploy:worker` or retry CI deploy.
+
+**500 on spin** — check Worker secrets with `GET /api/health`.
+
+**Repeating memes** — anti-repeat logic lives in [worker/src/spinVariety.ts](worker/src/spinVariety.ts).
+
+See [README.md](README.md) for full project docs.

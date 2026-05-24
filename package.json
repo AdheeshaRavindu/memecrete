@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "check": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.pages.json --noEmit",
     "dev:worker": "wrangler dev --config wrangler.worker.toml",
-    "deploy:pages": "npm run build && wrangler pages deploy dist --project-name memecrete --commit-dirty=true",
+    "deploy:pages": "npm run build && wrangler pages deploy dist --project-name spincrete --commit-dirty=true",
     "deploy:worker": "npm run build && wrangler deploy --config wrangler.worker.toml",
     "seed:db": "wrangler d1 execute spincrete-db --file=worker/d1/seed.sql --local"
   },
