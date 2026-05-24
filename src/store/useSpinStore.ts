@@ -12,6 +12,27 @@ interface SpinState {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? '';
 
+function isLocalHost() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const hostname = window.location.hostname;
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
+
+function resolveRemoteBase() {
+  if (API_BASE) {
+    return API_BASE;
+  }
+
+  if (typeof window === 'undefined' || isLocalHost()) {
+    return '';
+  }
+
+  return window.location.origin.replace(/\/$/, '');
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
   if (!response.ok) {
@@ -47,17 +68,15 @@ export const useSpinStore = create<SpinState>((set) => ({
     set({ loading: true, error: null });
 
     try {
-      if (API_BASE) {
-        try {
-          const remote = await fetchJson<SpinMemeResponse>(`${API_BASE}/api/spin`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-          });
-          set({ latest: remote, loading: false });
-          return;
-        } catch {
-          // Fall through to local generation when the worker is absent or returns 405/500.
-        }
+      const remoteBase = resolveRemoteBase();
+
+      if (remoteBase) {
+        const remote = await fetchJson<SpinMemeResponse>(`${remoteBase}/api/spin`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+        });
+        set({ latest: remote, loading: false });
+        return;
       }
 
       const local = await renderLocalSpin();

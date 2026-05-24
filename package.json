@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
+    "check": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.pages.json --noEmit",
     "dev:worker": "wrangler dev --config wrangler.worker.toml",
     "deploy:pages": "npm run build && wrangler pages deploy dist",
     "deploy:worker": "wrangler deploy --config wrangler.worker.toml",
