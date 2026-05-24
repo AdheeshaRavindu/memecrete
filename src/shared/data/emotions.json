@@ -1,0 +1,22 @@
+[
+  {"id":"coping","phrase":"coping","tags":["cope","survival","pain"],"tone":"blue","weight":1},
+  {"id":"delusional","phrase":"delusional","tags":["cope","belief","fantasy"],"tone":"unhinged","weight":1},
+  {"id":"euphoric","phrase":"euphoric","tags":["high","win","rush"],"tone":"bright","weight":1},
+  {"id":"ptsd","phrase":"PTSD","tags":["trauma","memory","fear"],"tone":"haunted","weight":1},
+  {"id":"gigabrain","phrase":"giga brain","tags":["smart","pride","signal"],"tone":"confident","weight":1},
+  {"id":"fakesmart","phrase":"fake smart money","tags":["smart-money","impersonation","cope"],"tone":"suspicious","weight":1},
+  {"id":"panic","phrase":"panic","tags":["panic","fear","rush"],"tone":"hot","weight":1},
+  {"id":"depression","phrase":"depression","tags":["sad","low","still"],"tone":"dark","weight":1},
+  {"id":"confidence","phrase":"confidence","tags":["sure","ready","hold"],"tone":"clean","weight":1},
+  {"id":"hopium-overdose","phrase":"hopium overdose","tags":["hopium","high","fantasy"],"tone":"floaty","weight":1},
+  {"id":"numb","phrase":"numb","tags":["numb","drained","silent"],"tone":"flat","weight":1},
+  {"id":"relief","phrase":"relief","tags":["relief","safe","quiet"],"tone":"soft","weight":1},
+  {"id":"grim-laughter","phrase":"grim laughter","tags":["grim","humor","cope"],"tone":"dry","weight":1},
+  {"id":"spite","phrase":"spite","tags":["spite","fuel","anger"],"tone":"sharp","weight":1},
+  {"id":"zen","phrase":"zen","tags":["calm","still","disciplined"],"tone":"quiet","weight":1},
+  {"id":"manic-focus","phrase":"manic focus","tags":["focus","rush","tunnel"],"tone":"wired","weight":1},
+  {"id":"suspicion","phrase":"suspicion","tags":["suspicious","watchful","alert"],"tone":"careful","weight":1},
+  {"id":"acceptance","phrase":"acceptance","tags":["accept","move-on","settled"],"tone":"soft","weight":1},
+  {"id":"delight","phrase":"delight","tags":["delight","win","taste"],"tone":"warm","weight":1},
+  {"id":"stoic","phrase":"stoic","tags":["stoic","cold","steady"],"tone":"stone","weight":1}
+]

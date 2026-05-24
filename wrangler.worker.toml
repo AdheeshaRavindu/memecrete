@@ -1,0 +1,10 @@
+name = "spincrete-api"
+main = "worker/src/index.ts"
+compatibility_date = "2025-05-24"
+
+[vars]
+APP_NAME = "Spincrete"
+APP_URL = "https://spincrete.pages.dev"
+OPENROUTER_MODEL = "meta-llama/llama-3.2-3b-instruct:free"
+GEMINI_MODEL = "gemini-2.5-flash"
+

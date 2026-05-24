@@ -1,0 +1,2 @@
+-- Spincrete now writes real generations as they happen.
+-- This seed file is intentionally empty.

@@ -1,0 +1,11 @@
+[
+  {"id":"wise-moai","phrase":"Wise Moai","tags":["wise","stone","disciplined"],"tone":"calm","weight":1},
+  {"id":"ancient-moai","phrase":"Ancient Moai","tags":["ancient","stone","memory"],"tone":"timeless","weight":1},
+  {"id":"sigma-moai","phrase":"Sigma Moai","tags":["sigma","stone","quiet"],"tone":"cool","weight":1},
+  {"id":"degen-moai","phrase":"Degen Moai","tags":["degen","chaos","risk"],"tone":"wild","weight":1},
+  {"id":"sleepy-moai","phrase":"Sleepy Moai","tags":["sleepy","rest","yield"],"tone":"low","weight":1},
+  {"id":"ptsd-moai","phrase":"PTSD Moai","tags":["trauma","memory","risk"],"tone":"haunted","weight":1},
+  {"id":"silent-winner-moai","phrase":"Silent Winner Moai","tags":["silent","winner","stone"],"tone":"calm","weight":1},
+  {"id":"overleveraged-moai","phrase":"Overleveraged Moai","tags":["leverage","stress","risk"],"tone":"frazzled","weight":1},
+  {"id":"burned-farmer-moai","phrase":"Burned Farmer Moai","tags":["burned","farmer","pain"],"tone":"worn","weight":1}
+]

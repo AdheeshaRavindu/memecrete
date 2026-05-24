@@ -1,0 +1,12 @@
+[
+  {"id":"absurd","label":"absurd","weight":1},
+  {"id":"deadpan","label":"deadpan","weight":1},
+  {"id":"irony","label":"irony","weight":1},
+  {"id":"self_roast","label":"self roast","weight":1},
+  {"id":"pain_humor","label":"pain humor","weight":1},
+  {"id":"sigma","label":"sigma humor","weight":1},
+  {"id":"ct_sarcasm","label":"CT sarcasm","weight":1},
+  {"id":"anti_degen","label":"anti-degen","weight":1},
+  {"id":"overconfidence","label":"overconfidence","weight":1},
+  {"id":"dark_market","label":"dark market humor","weight":1}
+]
