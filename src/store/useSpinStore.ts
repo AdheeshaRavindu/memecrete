@@ -36,7 +36,18 @@ function resolveRemoteBase() {
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    let message = `Request failed: ${response.status}`;
+
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body.error) {
+        message = body.error;
+      }
+    } catch {
+      // Keep the status-only message when the body is not JSON.
+    }
+
+    throw new Error(message);
   }
 
   return response.json() as Promise<T>;
@@ -71,12 +82,18 @@ export const useSpinStore = create<SpinState>((set) => ({
       const remoteBase = resolveRemoteBase();
 
       if (remoteBase) {
-        const remote = await fetchJson<SpinMemeResponse>(`${remoteBase}/api/spin`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-        });
-        set({ latest: remote, loading: false });
-        return;
+        try {
+          const remote = await fetchJson<SpinMemeResponse>(`${remoteBase}/api/spin`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+          });
+          set({ latest: remote, loading: false });
+          return;
+        } catch {
+          const local = await renderLocalSpin();
+          set({ latest: local, loading: false });
+          return;
+        }
       }
 
       const local = await renderLocalSpin();

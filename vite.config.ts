@@ -8,6 +8,16 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          motion: ['framer-motion'],
+        },
+      },
+    },
+  },
   server: {
     host: '0.0.0.0',
     proxy: {

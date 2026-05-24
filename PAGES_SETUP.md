@@ -29,4 +29,30 @@ Quick checklist (when connecting in the Pages UI):
 4. Set output directory: `dist`.
 5. Start the deployment.
 
+## Required Pages secrets
+
+The `functions/api/spin.ts` endpoint needs the same secrets as local `.dev.vars`. Without them, production spins fail with a 500 until the frontend falls back to local canvas rendering.
+
+Set these on the **production** environment for project `memecrete`:
+
+- `OPENROUTER_API_KEY`
+- `IMGFLIP_USERNAME`
+- `IMGFLIP_PASSWORD`
+
+Optional:
+
+- `GEMINI_API_KEY`
+- `OPENROUTER_MODEL`
+- `GEMINI_MODEL`
+
+From a machine that already has `.dev.vars`:
+
+```bash
+npx wrangler pages secret bulk .dev.vars --project-name memecrete
+```
+
+Or add them in the Cloudflare dashboard under **Workers & Pages → memecrete → Settings → Environment variables**.
+
+Production URL: https://memecrete.pages.dev
+
 If you want, I can also create a small `pages/` folder or an `index.html` in the repo root for a zero-build Pages deploy — tell me which approach you want and I will add it.

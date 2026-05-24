@@ -1,4 +1,8 @@
-node_modules/
+.pages-deploy/
+pages-deploy/
+.tmp-deploy/
+memecrete-dist.zip
+
 dist/
 .dev.vars
 .wrangler/
